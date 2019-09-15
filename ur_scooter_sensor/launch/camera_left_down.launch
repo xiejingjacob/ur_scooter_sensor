@@ -1,0 +1,32 @@
+
+<launch>
+<!--    open driver of left_down depth camera-->
+    <include file="$(find openni2_launch)/launch/openni2.launch">
+        <arg name="camera" value="camera_left_down" />
+        <arg name="device_id" value="1d27/0600@2/2"/>
+    </include>
+
+<!--    open driver of left_up rgb camera-->
+    <include file="$(find structure_core_ros_driver)/launch/sc.launch">
+        <arg name="camera" value="camera_left" />
+        <arg name="serial" value="2311" />
+    </include>
+    <param name="camera_left/sc_node/depth_range_mode" value="3" />
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 -1.56 0 -1.56 camera_left_link camera_left_rgb_optical_frame 100" />
+
+<!--    register rgb image on left depth image -->
+    <node pkg="ur_scooter_2" name="rgb_depth_name_left" type="img_registration.py" output="screen">
+        <param name="depth_name" value="camera_left_down" />
+        <param name="rgb_name" value="camera_left" />
+    </node>
+
+<!--    generate left point cloud-->
+    <node pkg="nodelet" type="nodelet" name="standalone_nodelet_left"  args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="load depth_image_proc/point_cloud_xyzrgb standalone_nodelet_left" output="screen">
+        <remap from="rgb/camera_info" to="camera_left_down/registered/camera_info"/>
+        <remap from="rgb/image_rect_color" to="camera_left_down/registered/rgb_image"/>
+        <remap from="depth_registered/image_rect" to="camera_left_down/registered/depth_image"/>
+        <remap from="depth_registered/points" to="camera_left_down/registered/points"/>
+    </node>
+
+</launch>
